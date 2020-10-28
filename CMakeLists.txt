@@ -60,9 +60,9 @@ aux_source_directory(${IZ2_SOURCE_DIR}/${project_dir}/${stress_dir} stress_tests
 add_executable(stress_tests ${stress_tests_sources})
 target_include_directories(stress_tests PUBLIC ${project_dir}/${inc_dir})
 
-target_link_libraries(unit_tests_serial serial gtest gcov)
-target_link_libraries(unit_tests_parallel parallel gtest gcov)
-target_link_libraries(stress_tests serial gtest dl gcov pthread)
+target_link_libraries(unit_tests_serial serial gtest gtest_main pthread gcov)
+target_link_libraries(unit_tests_parallel parallel gtest gtest_main pthread gcov)
+target_link_libraries(stress_tests serial gtest gtest_main pthread dl gcov)
 
 option(MULTITHREAD "use multithread lib" OFF)
 
