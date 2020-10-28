@@ -18,8 +18,10 @@ build:
   before_script:
     - apt -qq update > /dev/null && apt -qq -y install cmake > /dev/null
   script:
-    - cmake -S . -B build
-    - cd build; make;
+    - cmake -S . -B build -DMULTITHREAD=OFF
+    - cd build; make app; cd ..;
+    - cmake -S . -B build -DMULTITHREAD=ON
+    - cd build; make app;
 
 unit_and_stress_tests:
   stage: unit_and_stress_tests
