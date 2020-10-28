@@ -62,7 +62,7 @@ target_include_directories(stress_tests PUBLIC ${project_dir}/${inc_dir})
 
 target_link_libraries(unit_tests_serial serial gtest gcov)
 target_link_libraries(unit_tests_parallel parallel gtest gcov)
-target_link_libraries(stress_tests serial gtest dl gcov)
+target_link_libraries(stress_tests serial gtest dl gcov pthread)
 
 option(MULTITHREAD "use multithread lib" OFF)
 
