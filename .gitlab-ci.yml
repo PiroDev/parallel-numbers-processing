@@ -27,8 +27,9 @@ unit_and_stress_tests:
   stage: unit_and_stress_tests
   before_script:
     - apt -qq update > /dev/null && apt -qq -y install cmake > /dev/null
-  script:
+    - apt -qq -y install valgrind > /dev/null
     - apt -qq -y install libgtest-dev > /dev/null && apt -qq -y install gcovr > /dev/null
+  script:
     - cmake -S . -B build
     - cd build; make; cd ..;
     - ./unit_and_stress_tests.sh
