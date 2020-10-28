@@ -1,0 +1,32 @@
+image: gcc
+
+stages:
+  - test_style
+  - build
+  - unit_and_stress_tests
+
+test_style:
+  stage: test_style
+  before_script:
+    - apt -qq update > /dev/null && apt -qq -y install cppcheck > /dev/null
+    - apt -qq -y install python-pip > /dev/null && pip install --quiet cpplint
+  script:
+    - ./lint.sh
+
+build:
+  stage: build
+  before_script:
+    - apt -qq update > /dev/null && apt -qq -y install cmake > /dev/null
+  script:
+    - cmake -S . -B build
+    - cd build; make;
+
+unit_and_stress_tests:
+  stage: unit_and_stress_tests
+  before_script:
+    - apt -qq update > /dev/null && apt -qq -y install cmake > /dev/null
+  script:
+    - cmake -S . -B build
+    - cd build; make; cd ..;
+    - apt -qq -y install libgtest-dev > /dev/null && apt -qq -y install gcovr > /dev/null
+    - ./unit_and_stress_tests.sh
