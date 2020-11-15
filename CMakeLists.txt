@@ -29,15 +29,20 @@ aux_source_directory(${IZ2_SOURCE_DIR}/${project_dir}/${src_dir} app_sources)
 add_executable(app ${app_sources})
 target_include_directories(app PUBLIC ${project_dir}/${inc_dir})
 
+set(core_sources)
+aux_source_directory(${IZ2_SOURCE_DIR}/${project_dir}/${lib_dir}/core core_sources)
+
 # static serial lib
 set(serial_sources)
 aux_source_directory(${IZ2_SOURCE_DIR}/${project_dir}/${lib_dir}/serial serial_sources)
+set(serial_sources ${core_sources} ${serial_sources})
 add_library(serial STATIC ${serial_sources})
 target_include_directories(serial PUBLIC ${IZ2_SOURCE_DIR}/${project_dir}/${inc_dir})
 
 # shared parallel lib
 set(parallel_sources)
 aux_source_directory(${IZ2_SOURCE_DIR}/${project_dir}/${lib_dir}/parallel parallel_sources)
+set(parallel_sources ${core_sources} ${parallel_sources})
 add_library(parallel SHARED ${parallel_sources})
 target_include_directories(parallel PUBLIC ${IZ2_SOURCE_DIR}/${project_dir}/${inc_dir})
 target_link_libraries(parallel pthread)

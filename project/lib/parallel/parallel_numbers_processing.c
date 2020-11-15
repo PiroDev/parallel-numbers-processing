@@ -6,40 +6,26 @@
 #include "hardware_info.h"
 #include "numbers_processing.h"
 
-shared_data_t count_matched = { PTHREAD_MUTEX_INITIALIZER, 0 };
-
 void *thread_routine(void *args) {
     thread_routine_data_t *data = (thread_routine_data_t *)args;
-    int *left = data->array_left_border;
-    int *right = data->array_right_border;
-    int (*is_match)(int number) = data->is_match;
 
-    pthread_mutex_t *mutex = &count_matched.mutex;
-    int error_flag;
+    data->count_matched = count_numbers_matched(data->array, data->array_size, data->is_match);
 
-    for (int i = 0; left + i < right; i++) {
-        if (is_match(*(left + i))) {
-            error_flag = pthread_mutex_lock(mutex);
-            assert(error_flag == 0);
-
-            count_matched.value++;
-
-            error_flag = pthread_mutex_unlock(mutex);
-            assert(error_flag == 0);
-        }
-    }
     return (void *)data;
 }
 
-int predicate_number_is_negative(int number) { return number < 0; }
-
 int get_filter_matched_numbers_count(int *array, int array_size, int (*is_match)(int number)) {
-    count_matched.value = 0;
-    assert(array != NULL && array_size > 0);
+    if (!array || array_size <= 0) {
+        return -1;
+    }
+
+    int result = 0;
 
     int threads_count = get_max_threads_count();
     pthread_t *threads = (pthread_t *)calloc(threads_count, sizeof(pthread_t));
-    assert(threads != NULL);
+    if (!threads) {
+        return -1;
+    }
 
     size_t cache_size = get_L1_cache_size();
     /* сколько элементов массива одновременно вмещает кэш */
@@ -56,6 +42,9 @@ int get_filter_matched_numbers_count(int *array, int array_size, int (*is_match)
     /* размер массива обрабатываемого одним потоком */
     size_t array_size_per_thread = max_ints_count_in_cache / threads_count;
 
+    /* массив для хранения результата выполнения алгоритма для каждого потока */
+    int *results = calloc(threads_count, sizeof(int));
+
     for (int iter = 0; iter < iters_count; iter++) {
         if (remain_part_size != 0 && iter == iters_count - 1) {
             array_size_per_thread = remain_part_size / threads_count;
@@ -64,14 +53,14 @@ int get_filter_matched_numbers_count(int *array, int array_size, int (*is_match)
             size_t shift = array_size_per_thread * i + max_ints_count_in_cache * iter;
             thread_routine_data_t *data = malloc(sizeof(thread_routine_data_t));
             data->is_match = is_match;
+            data->array = array + shift;
 
-            data->array_left_border = array + shift;
             if (iter == iters_count - 1 && i == threads_count - 1 &&
-                data->array_left_border + array_size_per_thread < array + array_size) {
+                data->array + array_size_per_thread < array + array_size) {
                 /* на последней итерации у последнего потока нужно скорректировать правую границу */
-                data->array_right_border = array + array_size;
+                data->array_size = array_size - shift;
             } else {
-                data->array_right_border = data->array_left_border + array_size_per_thread;
+                data->array_size = array_size_per_thread;
             }
 
             int error_flag = pthread_create(threads + i, NULL, thread_routine, data);
@@ -81,11 +70,17 @@ int get_filter_matched_numbers_count(int *array, int array_size, int (*is_match)
         for (int i = 0; i < threads_count; i++) {
             void *data = NULL;
             int error_flag = pthread_join(threads[i], &data);
+            results[i] += ((thread_routine_data_t *)data)->count_matched;
             free(data);
             assert(error_flag == 0);
         }
     }
     free(threads);
 
-    return count_matched.value;
+    for (int i = 0; i < threads_count; i++) {
+        result += results[i];
+    }
+    free(results);
+
+    return result;
 }

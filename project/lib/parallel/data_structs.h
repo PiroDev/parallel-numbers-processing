@@ -4,14 +4,10 @@
 #include <pthread.h>
 
 typedef struct {
-    pthread_mutex_t mutex;
-    int value;
-} shared_data_t;
-
-typedef struct {
-    int *array_left_border;
-    int *array_right_border;
+    int *array;
+    int array_size;
     int (*is_match)(int number);
+    int count_matched;
 } thread_routine_data_t;
 
 #endif  // PROJECT_LIB_PARALLEL_DATA_STRUCTS_H_
