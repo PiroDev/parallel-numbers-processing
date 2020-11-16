@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.1)
 
 project(IZ2 VERSION 0.1 LANGUAGES C CXX)
 
-set(CMAKE_C_FLAGS "-Wall -Werror -Wextra -Wpedantic --coverage")
-set(CMAKE_CXX_FLAGS "-Wall -Werror -Wextra -Wpedantic")
+set(CMAKE_C_FLAGS "-Wall -Werror -Wextra --coverage")
+set(CMAKE_CXX_FLAGS "-Wall -Werror -Wextra")
 
 if(DEFINED MODE)
     if(${MODE} STREQUAL DEBUG)
@@ -72,7 +72,7 @@ target_link_libraries(stress_tests serial gtest gtest_main pthread dl gcov)
 option(MULTITHREAD "use multithread lib" OFF)
 
 if(MULTITHREAD)
-    target_link_libraries(app parallel)
+    target_link_libraries(app parallel dl)
 else()
-    target_link_libraries(app serial)
+    target_link_libraries(app serial dl)
 endif()

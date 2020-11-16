@@ -16,7 +16,7 @@ void *thread_routine(void *args) {
 
 int get_filter_matched_numbers_count(int *array, int array_size, int (*is_match)(int number)) {
     if (!array || array_size <= 0) {
-        return -1;
+        return wrong_array_size;
     }
 
     int result = 0;
@@ -24,7 +24,7 @@ int get_filter_matched_numbers_count(int *array, int array_size, int (*is_match)
     int threads_count = get_max_threads_count();
     pthread_t *threads = (pthread_t *)calloc(threads_count, sizeof(pthread_t));
     if (!threads) {
-        return -1;
+        return out_of_memory;
     }
 
     size_t cache_size = get_L1_cache_size();
@@ -44,6 +44,10 @@ int get_filter_matched_numbers_count(int *array, int array_size, int (*is_match)
 
     /* массив для хранения результата выполнения алгоритма для каждого потока */
     int *results = calloc(threads_count, sizeof(int));
+    if (!results) {
+        free(threads);
+        return out_of_memory;
+    }
 
     for (int iter = 0; iter < iters_count; iter++) {
         if (remain_part_size != 0 && iter == iters_count - 1) {
@@ -52,6 +56,11 @@ int get_filter_matched_numbers_count(int *array, int array_size, int (*is_match)
         for (int i = 0; i < threads_count; i++) {
             size_t shift = array_size_per_thread * i + max_ints_count_in_cache * iter;
             thread_routine_data_t *data = malloc(sizeof(thread_routine_data_t));
+            if (!data) {
+                free(threads);
+                free(results);
+                return out_of_memory;
+            }
             data->is_match = is_match;
             data->array = array + shift;
 
@@ -64,15 +73,24 @@ int get_filter_matched_numbers_count(int *array, int array_size, int (*is_match)
             }
 
             int error_flag = pthread_create(threads + i, NULL, thread_routine, data);
-            assert(error_flag == 0);
+            if (error_flag) {
+                free(threads);
+                free(results);
+                free(data);
+                for (int j = 0; j < i; j++) {
+                    void *thread_data = NULL;
+                    pthread_join(threads[i], &thread_data);
+                    free(thread_data);
+                }
+                return thread_create_error;
+            }
         }
 
         for (int i = 0; i < threads_count; i++) {
             void *data = NULL;
-            int error_flag = pthread_join(threads[i], &data);
+            pthread_join(threads[i], &data);
             results[i] += ((thread_routine_data_t *)data)->count_matched;
             free(data);
-            assert(error_flag == 0);
         }
     }
     free(threads);
