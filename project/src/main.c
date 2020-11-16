@@ -1,5 +1,6 @@
-#include <stdlib.h>
+#include <dlfcn.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "numbers_processing.h"
 
@@ -15,8 +16,20 @@ int main(void) {
     }
 
     int res = get_filter_matched_numbers_count(array, ARRAY_SIZE, x_is_less_than_157);
-    printf("%d\n", res);
+    printf("Serial lib result: %d\n", res);
 
+    void *library_ptr = dlopen("libparallel.so", RTLD_LAZY);
+    if (library_ptr) {
+        int (*parallel_get_filter_matched_numbers_count)(int *, int, int (*)(int)) =
+            (int (*)(int *, int, int (*)(int)))dlsym(library_ptr, "get_filter_matched_numbers_count");
+
+        res = parallel_get_filter_matched_numbers_count(array, ARRAY_SIZE, x_is_less_than_157);
+        printf("Parallel lib result: %d\n", res);
+
+        dlclose(library_ptr);
+    } else {
+        printf("Can't open libparallel.so\n");
+    }
     free(array);
 
     return 0;
